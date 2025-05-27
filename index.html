@@ -41,10 +41,11 @@
     </div>
 
     <script>
-        let viewer, panorama;
+        let viewer = new PANOLENS.Viewer({ output: document.getElementById("panorama-container") });
+        let panorama;
 
         function combineImages() {
-            console.log("\u{1F50D} 開始拼接圖片...");
+            console.log("🔍 開始拼接圖片...");
 
             const input = document.getElementById("imageUpload");
             const files = Array.from(input.files);
@@ -67,7 +68,7 @@
                     loaded++;
 
                     if (loaded === files.length) {
-                        console.log("\u{2705} 所有圖片載入完畢，開始合成...");
+                        console.log("✅ 所有圖片載入完畢，開始合成...");
 
                         const totalWidth = images.reduce((sum, img) => sum + img.width, 0);
                         const maxHeight = Math.max(...images.map(img => img.height));
@@ -82,7 +83,7 @@
 
                         const finalImg = new Image();
                         finalImg.onload = () => {
-                            console.log("\u{1F4F7} 合成圖片載入成功，初始化全景圖...");
+                            console.log("📷 合成圖片載入成功，初始化全景圖...");
 
                             if (panorama) {
                                 viewer.remove(panorama);
@@ -90,7 +91,6 @@
                             }
 
                             panorama = new PANOLENS.ImagePanorama(finalImg.src);
-                            viewer = new PANOLENS.Viewer({ output: document.getElementById("panorama-container") });
                             viewer.add(panorama);
                             console.log("全景圖加入 viewer 成功");
 
@@ -138,4 +138,3 @@
     </script>
 </body>
 </html>
-
