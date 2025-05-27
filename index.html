@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>720VR 全景圖片轉換工具</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background-color: #f0f0f0;
+      }
+      .container {
+        max-width: 800px;
+        margin: auto;
+        padding: 20px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        text-align: center;
+      }
+      input[type='file'] {
+        display: block;
+        margin: 10px auto;
+      }
+      button {
+        display: block;
+        margin: 10px auto;
+        padding: 10px 20px;
+        font-size: 16px;
+      }
+      #previewCanvas {
+        display: block;
+        margin: 20px auto;
+        max-width: 100%;
+        border: 1px solid #ccc;
+      }
+      #vrContainer {
+        width: 100%;
+        height: 500px;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>720VR 全景圖片轉換工具</h1>
+      <input type="file" id="imageInput" accept="image/*" multiple />
+      <button onclick="processFiles()">合成圖片</button>
+      <canvas id="previewCanvas"></canvas>
+      <div id="vrContainer"></div>
+    </div>
+
+    <!-- Panolens.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/panolens@0.12.0/build/panolens.min.js"></script>
+
+    <script>
+      let combinedImageDataUrl = null;
+
+      function processFiles() {
+        const input = document.getElementById('imageInput');
+        const files = input.files;
+
+        if (!files.length) {
+          alert('請選擇圖片');
+          return;
+        }
+
+        const images = [];
+        let loadedCount = 0;
+
+        for (let i = 0; i < files.length; i++) {
+          const reader = new FileReader();
+          reader.onload = function (event) {
+            const img = new Image();
+            img.onload = function () {
+              images[i] = img;
+              loadedCount++;
+              if (loadedCount === files.length) {
+                combineImages(images);
+              }
+            };
+            img.src = event.target.result;
+          };
+          reader.readAsDataURL(files[i]);
+        }
+      }
+
+      function combineImages(images) {
+        const totalWidth = images.reduce((sum, img) => sum + img.width, 0);
+        const maxHeight = Math.max(...images.map(img => img.height));
+
+        const canvas = document.getElementById('previewCanvas');
+        canvas.width = totalWidth;
+        canvas.height = maxHeight;
+        const ctx = canvas.getContext('2d');
+
+        let offsetX = 0;
+        for (const img of images) {
+          ctx.drawImage(img, offsetX, 0);
+          offsetX += img.width;
+        }
+
+        combinedImageDataUrl = canvas.toDataURL('image/jpeg');
+        initVRViewer(combinedImageDataUrl);
+      }
+
+      function initVRViewer(imageUrl) {
+        document.getElementById('vrContainer').innerHTML = '';
+
+        const panorama = new PANOLENS.ImagePanorama(imageUrl);
+        const viewer = new PANOLENS.Viewer({ container: document.getElementById('vrContainer') });
+        viewer.add(panorama);
+      }
+    </script>
+  </body>
+</html>
