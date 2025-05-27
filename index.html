@@ -90,7 +90,7 @@
                             }
 
                             panorama = new PANOLENS.ImagePanorama(finalImg.src);
-                            viewer = new PANOLENS.Viewer({ output: "panorama-container" });
+                            viewer = new PANOLENS.Viewer({ output: document.getElementById("panorama-container") });
                             viewer.add(panorama);
                             console.log("全景圖加入 viewer 成功");
 
