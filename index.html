@@ -44,9 +44,14 @@
         let viewer, panorama;
 
         function combineImages() {
+            console.log("\u{1F50D} 開始拼接圖片...");
+
             const input = document.getElementById("imageUpload");
             const files = Array.from(input.files);
-            if (files.length === 0) return alert("請選擇圖片");
+            if (files.length === 0) {
+                alert("請選擇圖片");
+                return;
+            }
 
             const canvas = document.createElement("canvas");
             const ctx = canvas.getContext("2d");
@@ -55,10 +60,15 @@
 
             files.forEach((file, index) => {
                 const img = new Image();
+                img.crossOrigin = "anonymous";
                 img.onload = () => {
+                    console.log(`圖片 ${index + 1} 載入完成，尺寸：${img.width}x${img.height}`);
                     images[index] = img;
                     loaded++;
+
                     if (loaded === files.length) {
+                        console.log("\u{2705} 所有圖片載入完畢，開始合成...");
+
                         const totalWidth = images.reduce((sum, img) => sum + img.width, 0);
                         const maxHeight = Math.max(...images.map(img => img.height));
                         canvas.width = totalWidth;
@@ -72,12 +82,20 @@
 
                         const finalImg = new Image();
                         finalImg.onload = () => {
-                            if (panorama) viewer.remove(panorama);
+                            console.log("\u{1F4F7} 合成圖片載入成功，初始化全景圖...");
+
+                            if (panorama) {
+                                viewer.remove(panorama);
+                                console.log("舊 panorama 移除");
+                            }
+
                             panorama = new PANOLENS.ImagePanorama(finalImg.src);
                             viewer = new PANOLENS.Viewer({ output: "panorama-container" });
                             viewer.add(panorama);
+                            console.log("全景圖加入 viewer 成功");
 
                             panorama.addEventListener('click', function (event) {
+                                console.log("使用者點擊 panorama，加上 infospot");
                                 const x = event.intersection.point.x;
                                 const y = event.intersection.point.y;
                                 const z = event.intersection.point.z;
@@ -91,6 +109,11 @@
                         finalImg.src = canvas.toDataURL();
                     }
                 };
+
+                img.onerror = () => {
+                    console.error(`❌ 圖片 ${index + 1} 載入失敗`);
+                };
+
                 img.src = URL.createObjectURL(file);
             });
         }
@@ -115,3 +138,4 @@
     </script>
 </body>
 </html>
+
