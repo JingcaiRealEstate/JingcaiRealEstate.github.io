@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>720度VR實境編輯器</title>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/panolens@0.12.0/build/panolens.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            padding: 20px;
+        }
+        #panorama-container {
+            width: 100%;
+            height: 600px;
+        }
+        input[type="file"] {
+            margin-bottom: 10px;
+        }
+        .infospot-input {
+            position: absolute;
+            background: white;
+            padding: 10px;
+            border: 1px solid #ccc;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>720度VR實境編輯器</h1>
+        <input type="file" id="imageUpload" accept="image/*" multiple>
+        <button onclick="combineImages()">模擬拼接圖片</button>
+        <div id="panorama-container"></div>
+    </div>
+
+    <script>
+        let viewer, panorama;
+
+        function combineImages() {
+            const input = document.getElementById("imageUpload");
+            const files = Array.from(input.files);
+            if (files.length === 0) return alert("請選擇圖片");
+
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            const images = [];
+            let loaded = 0;
+
+            files.forEach((file, index) => {
+                const img = new Image();
+                img.onload = () => {
+                    images[index] = img;
+                    loaded++;
+                    if (loaded === files.length) {
+                        const totalWidth = images.reduce((sum, img) => sum + img.width, 0);
+                        const maxHeight = Math.max(...images.map(img => img.height));
+                        canvas.width = totalWidth;
+                        canvas.height = maxHeight;
+
+                        let x = 0;
+                        images.forEach(img => {
+                            ctx.drawImage(img, x, 0);
+                            x += img.width;
+                        });
+
+                        const finalImg = new Image();
+                        finalImg.onload = () => {
+                            if (panorama) viewer.remove(panorama);
+                            panorama = new PANOLENS.ImagePanorama(finalImg.src);
+                            viewer = new PANOLENS.Viewer({ output: "panorama-container" });
+                            viewer.add(panorama);
+
+                            panorama.addEventListener('click', function (event) {
+                                const x = event.intersection.point.x;
+                                const y = event.intersection.point.y;
+                                const z = event.intersection.point.z;
+
+                                const infospot = new PANOLENS.Infospot(350, PANOLENS.DataImage.Info);
+                                infospot.position.set(x, y, z);
+                                infospot.addHoverElement(createInfoInput(infospot), 200);
+                                panorama.add(infospot);
+                            });
+                        };
+                        finalImg.src = canvas.toDataURL();
+                    }
+                };
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
+        function createInfoInput(infospot) {
+            const div = document.createElement("div");
+            div.className = "infospot-input";
+            div.innerHTML = `
+                <label>地標名稱:<br><input type="text" id="spot-title"></label><br>
+                <label>說明:<br><textarea id="spot-desc"></textarea></label><br>
+                <button onclick="saveInfospot(this)">儲存</button>
+            `;
+            return div;
+        }
+
+        window.saveInfospot = function(button) {
+            const container = button.closest(".infospot-input");
+            const title = container.querySelector("#spot-title").value;
+            const desc = container.querySelector("#spot-desc").value;
+            container.innerHTML = `<strong>${title}</strong><p>${desc}</p>`;
+        }
+    </script>
+</body>
+</html>
